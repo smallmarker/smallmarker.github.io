@@ -4,26 +4,19 @@
   
   
   <entry>
-    <title>测试文章</title>
-    <link href="/2022/06/08/%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0/"/>
-    <url>/2022/06/08/%E6%B5%8B%E8%AF%95%E6%96%87%E7%AB%A0/</url>
+    <title>Android AGP升级后导致APK体积增大</title>
+    <link href="/2022/06/10/Android-AGP%E5%8D%87%E7%BA%A7%E5%90%8E%E5%AF%BC%E8%87%B4APK%E4%BD%93%E7%A7%AF%E5%A2%9E%E5%A4%A7/"/>
+    <url>/2022/06/10/Android-AGP%E5%8D%87%E7%BA%A7%E5%90%8E%E5%AF%BC%E8%87%B4APK%E4%BD%93%E7%A7%AF%E5%A2%9E%E5%A4%A7/</url>
     
-    <content type="html"><![CDATA[<ul><li>原创<br>categories:</li><li>Java</li></ul><hr><p>这是一篇测试文章</p><p><img src="test.png" alt="图片引用方法二"></p>]]></content>
-    
-    
-    
-  </entry>
-  
-  
-  
-  <entry>
-    <title>Hello World</title>
-    <link href="/2022/06/08/hello-world/"/>
-    <url>/2022/06/08/hello-world/</url>
-    
-    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+    <content type="html"><![CDATA[<p><strong>项目AGP升级至7.0+后发现打出来release包的体积比之前增加近一倍，经过查询官方文档得知在AGP3.6.0时的行为变更上：默认情况下，原生库以未压缩的形式打包。</strong></p><p>在构建应用时，插件现在默认会将 <code>extractNativeLibs</code> 设置为<code> &quot;false&quot;</code>也就是说，您的原生库将保持页面对齐状态并以未压缩的形式打包。虽然这样会增加上传大小，但您的用户会从以下优势中受益：</p><ul><li>减小应用安装大小，因为平台可以直接从已安装的 APK 访问原生库，而无需创建库的副本。</li><li>减小下载文件大小，因为在 APK 或 <code>Android App Bundle</code> 中添加未压缩的原生库通常可提高 Play 商店的压缩率。</li></ul><p>如果您希望 <code>Android Gradle</code> 插件改为打包压缩后的原生库，请在应用的清单中添加以下代码：</p><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs applescript">&lt;<span class="hljs-built_in">application</span><br>    android:extractNativeLibs=<span class="hljs-string">&quot;true&quot;</span><br>    ... &gt;<br>&lt;/<span class="hljs-built_in">application</span>&gt;<br></code></pre></td></tr></table></figure><p><strong>但是从 AGP 4.2.0 开始，<code>extractNativeLibs</code> 清单属性已被 DSL 选项 <code>useLegacyPackaging</code> 取代。 您应该使用应用的 <code>build.gradle</code> 文件中的 <code>useLegacyPackaging</code>（而非清单文件中的 <code>extractNativeLibs</code>）来配置原生库压缩行为：</strong></p><h5 id="使用-DSL-打包压缩后的原生库"><a href="#使用-DSL-打包压缩后的原生库" class="headerlink" title="使用 DSL 打包压缩后的原生库"></a>使用 DSL 打包压缩后的原生库</h5><p>官方建议以未压缩的形式打包原生库，因为这会减小应用安装大小，缩减应用下载大小，并缩短用户的应用加载时间。不过，如果您希望 <code>Android Gradle</code> 插件在构建应用时打包压缩后的原生库，请在应用的 <code>build.gradle</code> 文件中将 <code>useLegacyPackaging</code>设置为 <code>true</code>：</p><figure class="highlight fsharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs fsharp"><span class="hljs-keyword">android</span> &#123;<br>    <span class="hljs-keyword">packagingOptions</span> &#123;<br>        <span class="hljs-keyword">jniLibs</span> &#123;<br>            useLegacyPackaging <span class="hljs-literal">true</span><br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure><p><strong>注意：<code>useLegacyPackaging</code> 标记会替换 <code>extractNativeLibs</code> 清单属性。默认情况下，原生库以未压缩的形式打包。</strong></p><p>官方文档参考：</p><p><a href="https://developer.android.com/studio/releases/gradle-plugin?buildsystem=ndk-build#extractNativeLibs">https://developer.android.com/studio/releases/gradle-plugin?buildsystem=ndk-build#extractNativeLibs</a></p><p><a href="https://developer.android.com/studio/releases/gradle-plugin?buildsystem=ndk-build#compress-native-libs-dsl">https://developer.android.com/studio/releases/gradle-plugin?buildsystem=ndk-build#compress-native-libs-dsl</a></p>]]></content>
     
     
+    
+    <tags>
+      
+      <tag>Android奇遇记</tag>
+      
+    </tags>
     
   </entry>
   
