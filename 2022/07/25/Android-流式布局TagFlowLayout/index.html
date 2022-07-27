@@ -16,16 +16,16 @@
   <meta name="author" content="smallmarker">
   <meta name="keywords" content="">
   
-    <meta name="description" content="简介这是一个Android流式布局，根据鸿翔大神之前写的FlowLayout设计思路结合Material库中的ChipGroup设计架构衍生而来 效果展示 方法setter   方法名称 作用 示例    setTagSpacingHorizontal(@Dimension tagSpacingHorizontal: Int) Tag间的水平间距 setTagSpacingHorizontal(2">
+    <meta name="description" content="简介这是一个Android流式布局，根据鸿翔大神之前写的FlowLayout设计思路结合Material库中的ChipGroup设计架构衍生而来，全新的流式布局TagFlowLayout组件 效果展示 方法setter   方法名称 作用 示例    setTagSpacingHorizontal(@Dimension tagSpacingHorizontal: Int) Tag间的水平间距 se">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Android 流式布局TagFlowLayout">
 <meta property="og:url" content="https://smallmarker.github.io/2022/07/25/Android-%E6%B5%81%E5%BC%8F%E5%B8%83%E5%B1%80TagFlowLayout/index.html">
 <meta property="og:site_name" content="萌动小彩笔">
-<meta property="og:description" content="简介这是一个Android流式布局，根据鸿翔大神之前写的FlowLayout设计思路结合Material库中的ChipGroup设计架构衍生而来 效果展示 方法setter   方法名称 作用 示例    setTagSpacingHorizontal(@Dimension tagSpacingHorizontal: Int) Tag间的水平间距 setTagSpacingHorizontal(2">
+<meta property="og:description" content="简介这是一个Android流式布局，根据鸿翔大神之前写的FlowLayout设计思路结合Material库中的ChipGroup设计架构衍生而来，全新的流式布局TagFlowLayout组件 效果展示 方法setter   方法名称 作用 示例    setTagSpacingHorizontal(@Dimension tagSpacingHorizontal: Int) Tag间的水平间距 se">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://smallmarker.github.io/2022/07/25/Android-%E6%B5%81%E5%BC%8F%E5%B8%83%E5%B1%80TagFlowLayout/tagflowlayout_demo.gif">
 <meta property="article:published_time" content="2022-07-25T08:43:44.000Z">
-<meta property="article:modified_time" content="2022-07-25T08:59:14.015Z">
+<meta property="article:modified_time" content="2022-07-27T07:09:34.867Z">
 <meta property="article:author" content="smallmarker">
 <meta property="article:tag" content="Android组件">
 <meta name="twitter:card" content="summary_large_image">
@@ -230,7 +230,7 @@
         
         
         
-          29 分钟
+          30 分钟
         
       </span>
     
@@ -272,7 +272,7 @@
             
             <div class="markdown-body">
               
-              <h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p><strong>这是一个Android流式布局，根据鸿翔大神之前写的<a target="_blank" rel="noopener" href="https://github.com/hongyangAndroid/FlowLayout">FlowLayout</a>设计思路结合<code>Material</code>库中的<code>ChipGroup</code>设计架构衍生而来</strong></p>
+              <h3 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h3><p><strong>这是一个Android流式布局，根据鸿翔大神之前写的<a target="_blank" rel="noopener" href="https://github.com/hongyangAndroid/FlowLayout">FlowLayout</a>设计思路结合<code>Material</code>库中的<code>ChipGroup</code>设计架构衍生而来，全新的流式布局<a target="_blank" rel="noopener" href="https://github.com/smallmarker/TagFlowLayout">TagFlowLayout</a>组件</strong></p>
 <h3 id="效果展示"><a href="#效果展示" class="headerlink" title="效果展示"></a>效果展示</h3><p><img src="tagflowlayout_demo.gif" srcset="/img/loading.gif" lazyload alt="tagflowlayout_demo"></p>
 <h3 id="方法"><a href="#方法" class="headerlink" title="方法"></a>方法</h3><h4 id="setter"><a href="#setter" class="headerlink" title="setter"></a>setter</h4><table>
 <thead>
@@ -396,7 +396,7 @@
 <td align="center"><code>app:selectMax=&quot;10&quot;</code></td>
 </tr>
 </tbody></table>
-<h3 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h3><figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs clean">dependencies &#123;<br>    <span class="hljs-keyword">implementation</span> <span class="hljs-string">&#x27;io.github.smallmarker:tagflowlayout:0.0.1&#x27;</span><br>&#125;<br></code></pre></td></tr></table></figure>
+<h3 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h3><figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs clean">dependencies &#123;<br>    <span class="hljs-keyword">implementation</span> <span class="hljs-string">&#x27;io.github.smallmarker:tagflowlayout:1.0&#x27;</span><br>&#125;<br></code></pre></td></tr></table></figure>
 <h3 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h3><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs routeros">&lt;com.smallmarker.tagflowlayout.TagFlowLayout<br>            android:<span class="hljs-attribute">id</span>=<span class="hljs-string">&quot;@+id/tag_flow_layout&quot;</span><br>            android:<span class="hljs-attribute">layout_width</span>=<span class="hljs-string">&quot;match_parent&quot;</span><br>            android:<span class="hljs-attribute">layout_height</span>=<span class="hljs-string">&quot;wrap_content&quot;</span><br>            app:<span class="hljs-attribute">tagSpacing</span>=<span class="hljs-string">&quot;16dp&quot;</span>/&gt;<br></code></pre></td></tr></table></figure>
 <h3 id="Adapter"><a href="#Adapter" class="headerlink" title="Adapter"></a>Adapter</h3><h4 id="方法属性"><a href="#方法属性" class="headerlink" title="方法属性"></a>方法属性</h4><ul>
 <li>创建Adapter：<code>TagFlowAdapter.create(dataList)</code></li>
