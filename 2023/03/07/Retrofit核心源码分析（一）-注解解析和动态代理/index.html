@@ -1,0 +1,672 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="smallmarker">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="Retrofit是目前Android平台上比较流行的网络请求框架之一，它提供了一种简洁、灵活的方式来处理HTTP请求和响应。Retrofit的设计目的是使网络请求的代码更加容易编写和阅读，同时还提供了许多有用的特性，如注解解析、动态代理等。在本文中，我们将对Retrofit的注解解析和动态代理进行详细的分析。 注解解析在使用Retrofit时，我们通常会定义一个接口，该接口用于描述我们要请求的AP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Retrofit 核心源码分析（一）- 注解解析和动态代理">
+<meta property="og:url" content="https://smallmarker.github.io/2023/03/07/Retrofit%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%B8%80%EF%BC%89-%E6%B3%A8%E8%A7%A3%E8%A7%A3%E6%9E%90%E5%92%8C%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86/index.html">
+<meta property="og:site_name" content="萌动小彩笔">
+<meta property="og:description" content="Retrofit是目前Android平台上比较流行的网络请求框架之一，它提供了一种简洁、灵活的方式来处理HTTP请求和响应。Retrofit的设计目的是使网络请求的代码更加容易编写和阅读，同时还提供了许多有用的特性，如注解解析、动态代理等。在本文中，我们将对Retrofit的注解解析和动态代理进行详细的分析。 注解解析在使用Retrofit时，我们通常会定义一个接口，该接口用于描述我们要请求的AP">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-07T10:23:15.000Z">
+<meta property="article:modified_time" content="2023-03-07T10:34:55.709Z">
+<meta property="article:author" content="smallmarker">
+<meta property="article:tag" content="Android源码分析">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Retrofit 核心源码分析（一）- 注解解析和动态代理 - 萌动小彩笔</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"smallmarker.github.io","root":"/","version":"1.9.1","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>萌动小彩笔</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Retrofit 核心源码分析（一）- 注解解析和动态代理"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-03-07 18:23" pubdate>
+          2023年3月7日 晚上
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          38 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Retrofit 核心源码分析（一）- 注解解析和动态代理</h1>
+            
+            <div class="markdown-body">
+              
+              <p><strong>Retrofit是目前Android平台上比较流行的网络请求框架之一，它提供了一种简洁、灵活的方式来处理HTTP请求和响应。Retrofit的设计目的是使网络请求的代码更加容易编写和阅读，同时还提供了许多有用的特性，如注解解析、动态代理等。在本文中，我们将对Retrofit的注解解析和动态代理进行详细的分析。</strong></p>
+<h4 id="注解解析"><a href="#注解解析" class="headerlink" title="注解解析"></a>注解解析</h4><p>在使用Retrofit时，我们通常会定义一个接口，该接口用于描述我们要请求的API接口。在这个接口中，我们可以使用注解来描述API的各个方面，如HTTP方法、请求URL、请求参数等。Retrofit会根据这些注解来生成相应的网络请求代码。下面是一个示例：</p>
+<figure class="highlight less"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs less"><span class="hljs-selector-tag">interface</span> <span class="hljs-selector-tag">GitHubService</span> &#123;<br>    <span class="hljs-variable">@GET</span>(<span class="hljs-string">&quot;users/&#123;user&#125;/repos&quot;</span>)<br>    fun listRepos(<span class="hljs-variable">@Path</span>(<span class="hljs-string">&quot;user&quot;</span>) <span class="hljs-attribute">user</span>: String): Call&lt;List&lt;Repo&gt;&gt;<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>在这个示例中，@GET注解表示这是一个HTTP GET请求，”users/{user}/repos”表示请求的URL，@Path(“user”)表示请求URL中的参数。Retrofit会解析这些注解，并生成相应的网络请求代码。</p>
+<p>Retrofit中的注解解析是通过Retrofit.Builder中的retrofit2.Retrofit#create方法实现的。这个方法会返回一个代理对象，该代理对象会在调用接口方法时解析注解并生成相应的网络请求。</p>
+<p>下面是retrofit2.Retrofit#create方法的核心代码：</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs reasonml">public &lt;T&gt; T create(final Class&lt;T&gt; service) &#123;<br>    <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Utils</span>.</span></span>validate<span class="hljs-constructor">ServiceInterface(<span class="hljs-params">service</span>)</span>;<br>    <span class="hljs-keyword">if</span> (validateEagerly) &#123;<br>        eagerly<span class="hljs-constructor">ValidateMethods(<span class="hljs-params">service</span>)</span>;<br>    &#125;<br>    return (T) <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Proxy</span>.</span></span><span class="hljs-keyword">new</span><span class="hljs-constructor">ProxyInstance(<span class="hljs-params">service</span>.<span class="hljs-params">getClassLoader</span>()</span>, <span class="hljs-keyword">new</span> Class&lt;?&gt;<span class="hljs-literal">[]</span> &#123; service &#125;,<br>            <span class="hljs-keyword">new</span> <span class="hljs-constructor">InvocationHandler()</span> &#123;<br>                <span class="hljs-keyword">private</span> final Platform platform = <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Platform</span>.</span></span>get<span class="hljs-literal">()</span>;<br><br>                @Override<br>                public Object invoke(Object proxy, Method <span class="hljs-keyword">method</span>, Object<span class="hljs-literal">[]</span> args)<br>                        throws Throwable &#123;<br>                    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">method</span>.get<span class="hljs-constructor">DeclaringClass()</span><span class="hljs-operator"> == </span><span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Object</span>.</span></span><span class="hljs-keyword">class</span>) &#123;<br>                        return <span class="hljs-keyword">method</span>.invoke(this, args);<br>                    &#125;<br>                    <span class="hljs-keyword">if</span> (platform.is<span class="hljs-constructor">DefaultMethod(<span class="hljs-params">method</span>)</span>) &#123;<br>                        return platform.invoke<span class="hljs-constructor">DefaultMethod(<span class="hljs-params">method</span>, <span class="hljs-params">service</span>, <span class="hljs-params">proxy</span>, <span class="hljs-params">args</span>)</span>;<br>                    &#125;<br>                    ServiceMethod&lt;Object, Object&gt; serviceMethod =<br>                            (ServiceMethod&lt;Object, Object&gt;) load<span class="hljs-constructor">ServiceMethod(<span class="hljs-params">method</span>)</span>;<br>                    OkHttpCall&lt;Object&gt; okHttpCall = <span class="hljs-keyword">new</span> OkHttpCall&lt;&gt;(serviceMethod, args);<br>                    return serviceMethod.callAdapter.adapt(okHttpCall);<br>                &#125;<br>            &#125;);<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>该方法首先会验证接口是否满足要求，然后会返回一个代理对象。这个代理对象实现了接口中的所有方法，并在调用方法时解析注解并生成相应的网络请求。</p>
+<p>我们可以看到，代理对象的实现是通过java.lang.reflect.Proxy类实现的。Proxy.newProxyInstance方法会返回一个代理对象，该代理对象实现了指定接口中的所有方法。当我们调用代理对象的方法时，代理对象会调用InvocationHandler.invoke方法，该方法中实现了注解解析和网络请求的生成。</p>
+<p>在InvocationHandler.invoke方法中，首先会判断是否调用了Object类的方法，如果是，则直接返回该方法的执行结果。如果不是，则进一步判断是否调用了接口的默认方法，如果是，则使用Platform类调用默认方法。否则，就调用loadServiceMethod方法来解析注解并生成网络请求。</p>
+<p>loadServiceMethod方法会首先从缓存中获取ServiceMethod对象，如果缓存中没有，则创建一个新的ServiceMethod对象。ServiceMethod对象包含了网络请求的相关信息，如HTTP方法、请求URL、请求参数等。ServiceMethod对象的创建是通过ServiceMethod.Builder类实现的，该类会解析接口方法上的注解并生成相应的网络请求。</p>
+<p>下面是ServiceMethod.Builder类的核心代码：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-function"><span class="hljs-keyword">public</span> ServiceMethod <span class="hljs-title">build</span>()</span> &#123;<br>    callAdapter = createCallAdapter();<br>    responseType = callAdapter.responseType();<br>    <span class="hljs-keyword">if</span> (responseType == Response.<span class="hljs-keyword">class</span> || responseType == okhttp3.Response.<span class="hljs-keyword">class</span>) &#123;<br>        <span class="hljs-keyword">throw</span> methodError(<span class="hljs-string">&quot;&#x27;&quot;</span><br>                + Utils.getRawType(responseType).getName()<br>                + <span class="hljs-string">&quot;&#x27; is not a valid response body type. Did you mean ResponseBody?&quot;</span>);<br>    &#125;<br>    responseConverter = createResponseConverter();<br>    RequestFactory requestFactory = createRequestFactory();<br>    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> ServiceMethod&lt;&gt;(requestFactory, callAdapter, responseConverter);<br>&#125;<br><br></code></pre></td></tr></table></figure>
+
+<p>在ServiceMethod.Builder类中，首先会创建一个CallAdapter对象，该对象用于处理网络请求的结果。然后会检查responseType是否是Response或okhttp3.Response类型，如果是，则抛出异常。接下来，会创建一个ResponseConverter对象，该对象用于将网络请求的结果转换成Java对象。最后，会创建一个RequestFactory对象，该对象用于创建okhttp3.Request对象。</p>
+<p>ServiceMethod对象包含了网络请求的相关信息，包括RequestFactory对象、CallAdapter对象和ResponseConverter对象。OkHttpCall对象则负责执行网络请求，并将结果传递给CallAdapter对象进行处理。CallAdapter对象最终将结果转换成Java对象并返回给调用者。</p>
+<h4 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h4><p>在前面的代码中，我们已经看到了动态代理的使用。在Retrofit中，我们使用动态代理来实现注解解析和网络请求的生成。动态代理是一种机制，通过它我们可以在运行时创建一个代理对象，该代理对象会代替原始对象来执行方法调用。</p>
+<p>在Retrofit中，我们使用动态代理来创建一个实现接口的代理对象。当我们调用代理对象的方法时，代理对象会调用InvocationHandler.invoke方法，该方法中实现了注解解析和网络请求的生成。因此，我们可以将网络请求的代码封装在接口中，使得我们的代码更加简洁和易于阅读。</p>
+<p>下面是一个使用动态代理的简单示例：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs kotlin"><span class="hljs-keyword">import</span> java.lang.reflect.*<br><br><span class="hljs-class"><span class="hljs-keyword">interface</span> <span class="hljs-title">HelloWorld</span> </span>&#123;<br>    <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">sayHello</span><span class="hljs-params">()</span></span><br>&#125;<br><br><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">HelloWorldImpl</span> : <span class="hljs-type">HelloWorld &#123;</span></span><br>    <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">sayHello</span><span class="hljs-params">()</span></span> &#123;<br>        println(<span class="hljs-string">&quot;Hello, world!&quot;</span>)<br>    &#125;<br>&#125;<br><br><span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;<br>    <span class="hljs-keyword">val</span> proxy = Proxy.newProxyInstance(<br>        DynamicProxyExample::<span class="hljs-keyword">class</span>.java.classLoader,<br>        arrayOf(HelloWorld::<span class="hljs-keyword">class</span>.java),<br>        <span class="hljs-keyword">object</span> : InvocationHandler &#123;<br>            <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> target: HelloWorld = HelloWorldImpl()<br>            <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">fun</span> <span class="hljs-title">invoke</span><span class="hljs-params">(proxy: <span class="hljs-type">Any</span>?, method: <span class="hljs-type">Method</span>?, args: <span class="hljs-type">Array</span>&lt;<span class="hljs-type">out</span> <span class="hljs-type">Any</span>&gt;?)</span></span>: Any? &#123;<br>                println(<span class="hljs-string">&quot;Before method execution...&quot;</span>)<br>                <span class="hljs-keyword">val</span> result = method?.invoke(target, *(args ?: emptyArray()))<br>                println(<span class="hljs-string">&quot;After method execution...&quot;</span>)<br>                <span class="hljs-keyword">return</span> result<br>            &#125;<br>        &#125;<br>    ) <span class="hljs-keyword">as</span> HelloWorld<br>    proxy.sayHello()<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在这个示例中，我们定义了一个<code>HelloWorld</code>接口和一个<code>HelloWorldImpl</code>实现类。然后，我们使用动态代理创建了一个代理对象，该代理对象实现了<code>HelloWorld</code>接口。在<code>InvocationHandler</code>的<code>invoke</code>方法中，我们首先输出一行日志，然后调用<code>HelloWorldImpl</code>对象的<code>sayHello</code>方法，最后再输出一行日志。当我们调用代理对象的<code>sayHello</code>方法时，代理对象会调用<code>InvocationHandler.invoke</code>方法，从而实现了在方法执行前后输出日志的功能。动态代理是一种非常强大的机制，可以用于实现很多功能，如性能分析、日志记录、事务管理等。在Retrofit中，我们使用动态代理来实现注解解析和网络请求的生成，从而使得我们的代码更加简洁和易于阅读。</p>
+
+              
+            </div>
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Android%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">#Android源码分析</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Retrofit 核心源码分析（一）- 注解解析和动态代理</div>
+      <div>https://smallmarker.github.io/2023/03/07/Retrofit核心源码分析（一）-注解解析和动态代理/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>smallmarker</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年3月7日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/07/25/Android-%E6%B5%81%E5%BC%8F%E5%B8%83%E5%B1%80TagFlowLayout/" title="Android 流式布局TagFlowLayout">
+                        <span class="hidden-mobile">Android 流式布局TagFlowLayout</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script>
+  (function() {
+    var enableLang = CONFIG.code_language.enable && CONFIG.code_language.default;
+    var enableCopy = CONFIG.copy_btn;
+    if (!enableLang && !enableCopy) {
+      return;
+    }
+
+    function getBgClass(ele) {
+      return Fluid.utils.getBackgroundLightness(ele) >= 0 ? 'code-widget-light' : 'code-widget-dark';
+    }
+
+    var copyTmpl = '';
+    copyTmpl += '<div class="code-widget">';
+    copyTmpl += 'LANG';
+    copyTmpl += '</div>';
+    jQuery('.markdown-body pre').each(function() {
+      var $pre = jQuery(this);
+      if ($pre.find('code.mermaid').length > 0) {
+        return;
+      }
+      if ($pre.find('span.line').length > 0) {
+        return;
+      }
+
+      var lang = '';
+
+      if (enableLang) {
+        lang = CONFIG.code_language.default;
+        if ($pre[0].children.length > 0 && $pre[0].children[0].classList.length >= 2 && $pre.children().hasClass('hljs')) {
+          lang = $pre[0].children[0].classList[1];
+        } else if ($pre[0].getAttribute('data-language')) {
+          lang = $pre[0].getAttribute('data-language');
+        } else if ($pre.parent().hasClass('sourceCode') && $pre[0].children.length > 0 && $pre[0].children[0].classList.length >= 2) {
+          lang = $pre[0].children[0].classList[1];
+          $pre.parent().addClass('code-wrapper');
+        } else if ($pre.parent().hasClass('markdown-body') && $pre[0].classList.length === 0) {
+          $pre.wrap('<div class="code-wrapper"></div>');
+        }
+        lang = lang.toUpperCase().replace('NONE', CONFIG.code_language.default);
+      }
+      $pre.append(copyTmpl.replace('LANG', lang).replace('code-widget">',
+        getBgClass($pre[0]) + (enableCopy ? ' code-widget copy-btn" data-clipboard-snippet><i class="iconfont icon-copy"></i>' : ' code-widget">')));
+
+      if (enableCopy) {
+        Fluid.utils.createScript('https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js', function() {
+          var clipboard = new window.ClipboardJS('.copy-btn', {
+            target: function(trigger) {
+              var nodes = trigger.parentNode.childNodes;
+              for (var i = 0; i < nodes.length; i++) {
+                if (nodes[i].tagName === 'CODE') {
+                  return nodes[i];
+                }
+              }
+            }
+          });
+          clipboard.on('success', function(e) {
+            e.clearSelection();
+            e.trigger.innerHTML = e.trigger.innerHTML.replace('icon-copy', 'icon-success');
+            setTimeout(function() {
+              e.trigger.innerHTML = e.trigger.innerHTML.replace('icon-success', 'icon-copy');
+            }, 2000);
+          });
+        });
+      }
+    });
+  })();
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
