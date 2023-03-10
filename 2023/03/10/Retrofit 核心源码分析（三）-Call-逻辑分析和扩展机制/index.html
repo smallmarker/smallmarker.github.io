@@ -1,0 +1,691 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="smallmarker">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="在前面的两篇文章中，我们已经对 Retrofit 的注解解析、动态代理、网络请求和响应处理机制有了一定的了解。在这篇文章中，我们将深入分析 Retrofit 的 Call 逻辑，并介绍 Retrofit 的扩展机制。 一、Call 逻辑分析Call 是 Retrofit 中最基本的操作单元，它代表一个 HTTP 请求。在 Retrofit 中，我们通过接口定义请求的方式，并通过动态代理生成接口的实">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Retrofit 核心源码分析（三）- Call 逻辑分析和扩展机制">
+<meta property="og:url" content="https://smallmarker.github.io/2023/03/10/Retrofit%20%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%B8%89%EF%BC%89-Call-%E9%80%BB%E8%BE%91%E5%88%86%E6%9E%90%E5%92%8C%E6%89%A9%E5%B1%95%E6%9C%BA%E5%88%B6/index.html">
+<meta property="og:site_name" content="萌动小彩笔">
+<meta property="og:description" content="在前面的两篇文章中，我们已经对 Retrofit 的注解解析、动态代理、网络请求和响应处理机制有了一定的了解。在这篇文章中，我们将深入分析 Retrofit 的 Call 逻辑，并介绍 Retrofit 的扩展机制。 一、Call 逻辑分析Call 是 Retrofit 中最基本的操作单元，它代表一个 HTTP 请求。在 Retrofit 中，我们通过接口定义请求的方式，并通过动态代理生成接口的实">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-10T09:20:59.000Z">
+<meta property="article:modified_time" content="2023-03-10T09:30:24.506Z">
+<meta property="article:author" content="smallmarker">
+<meta property="article:tag" content="Android 源码分析">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Retrofit 核心源码分析（三）- Call 逻辑分析和扩展机制 - 萌动小彩笔</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"smallmarker.github.io","root":"/","version":"1.9.1","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+
+  
+<meta name="generator" content="Hexo 5.4.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>萌动小彩笔</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              &nbsp;<i class="iconfont icon-search"></i>&nbsp;
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Retrofit 核心源码分析（三）- Call 逻辑分析和扩展机制"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-03-10 17:20" pubdate>
+          2023年3月10日 下午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          52 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Retrofit 核心源码分析（三）- Call 逻辑分析和扩展机制</h1>
+            
+            <div class="markdown-body">
+              
+              <p><strong>在前面的两篇文章中，我们已经对 Retrofit 的注解解析、动态代理、网络请求和响应处理机制有了一定的了解。在这篇文章中，我们将深入分析 Retrofit 的 Call 逻辑，并介绍 Retrofit 的扩展机制。</strong></p>
+<h3 id="一、Call-逻辑分析"><a href="#一、Call-逻辑分析" class="headerlink" title="一、Call 逻辑分析"></a>一、Call 逻辑分析</h3><p>Call 是 Retrofit 中最基本的操作单元，它代表一个 HTTP 请求。在 Retrofit 中，我们通过接口定义请求的方式，并通过动态代理生成接口的实现类。这个实现类中的方法都会返回一个 Call 对象，通过这个对象我们可以发起网络请求，并获得响应结果。</p>
+<p>Retrofit 的 Call 逻辑可以用以下代码来描述：</p>
+<figure class="highlight csharp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs csharp"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title">Call</span>&lt;<span class="hljs-title">T</span>&gt; &#123;<br>    <span class="hljs-function">Response&lt;T&gt; <span class="hljs-title">execute</span>() throws IOException</span>;<br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">enqueue</span>(<span class="hljs-params">Callback&lt;T&gt; callback</span>)</span>;<br>    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">cancel</span>()</span>;<br>    <span class="hljs-function">boolean <span class="hljs-title">isExecuted</span>()</span>;<br>    <span class="hljs-function">boolean <span class="hljs-title">isCanceled</span>()</span>;<br>    <span class="hljs-function">Call&lt;T&gt; <span class="hljs-title">clone</span>()</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在这个接口中，我们可以看到 Retrofit 定义了五个方法，分别是 <code>execute</code>、<code>enqueue</code>、<code>cancel</code>、<code>isExecuted</code>和<code>isCanceled</code>。我们来逐一分析这些方法的作用。</p>
+<h4 id="execute-方法"><a href="#execute-方法" class="headerlink" title="execute 方法"></a>execute 方法</h4><p><code>execute</code>方法用于同步发起 HTTP 请求，当我们调用<code>execute()</code>方法时，它会立即发起网络请求，并且阻塞当前线程直到请求结束，最后返回一个响应对象<code>Response</code>。这种方式适用于简单的网络请求，但不适合于在主线程中执行请求，因为会阻塞 UI 线程。</p>
+<p>以下是<code>execute()</code>方法的部分代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-keyword">public</span> Response&lt;T&gt; <span class="hljs-title function_">execute</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> IOException &#123;<br>  <span class="hljs-keyword">synchronized</span> (<span class="hljs-built_in">this</span>) &#123;<br>    <span class="hljs-keyword">if</span> (executed) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;Already executed.&quot;</span>);<br>    executed = <span class="hljs-literal">true</span>;<br>  &#125;<br>  captureCallStackTrace();<br>  <span class="hljs-keyword">try</span> &#123;<br>    client.dispatcher().executed(<span class="hljs-built_in">this</span>);<br>    Response&lt;T&gt; result = getResponseWithInterceptorChain();<br>    <span class="hljs-keyword">if</span> (result == <span class="hljs-literal">null</span>) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IOException</span>(<span class="hljs-string">&quot;Canceled&quot;</span>);<br>    <span class="hljs-keyword">return</span> result;<br>  &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>    <span class="hljs-keyword">throw</span> timeoutExit(e);<br>  &#125; <span class="hljs-keyword">finally</span> &#123;<br>    client.dispatcher().finished(<span class="hljs-built_in">this</span>);<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上述代码中，我们可以看到该方法首先会检查当前请求是否已经执行过，如果已经执行过则会抛出一个异常。然后会将该请求加入到<code>Dispatcher</code>中的执行队列中。接下来会调用<code>getResponseWithInterceptorChain()</code>方法来获取响应结果。如果结果为null，则表示请求已经被取消，否则返回响应结果。最后，会将该请求从执行队列中移除。</p>
+<h4 id="enqueue-方法"><a href="#enqueue-方法" class="headerlink" title="enqueue 方法"></a>enqueue 方法</h4><p><code>enqueue</code>方法用于异步发起 HTTP 请求，它会在后台线程中发起网络请求，并在请求结束后将结果返回到主线程中。因此，<code>enqueue()</code>方法适用于在主线程中执行网络请求。</p>
+<p>以下是<code>enqueue()</code>方法的部分代码：</p>
+<figure class="highlight aspectj"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs aspectj"><span class="hljs-meta">@Override</span><br><span class="hljs-keyword">public</span> <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">enqueue</span><span class="hljs-params">(Callback&lt;T&gt; callback)</span> </span>&#123;<br>  <span class="hljs-keyword">synchronized</span> (<span class="hljs-keyword">this</span>) &#123;<br>    <span class="hljs-keyword">if</span> (executed) <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> IllegalStateException(<span class="hljs-string">&quot;Already executed.&quot;</span>);<br>    executed = <span class="hljs-keyword">true</span>;<br>  &#125;<br>  captureCallStackTrace();<br>  client.dispatcher().enqueue(<span class="hljs-keyword">new</span> AsyncCall(callback));<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上述代码中，我们可以看到该方法首先会检查当前请求是否已经执行过，如果已经执行过则会抛出一个异常。然后会将该请求封装成一个<code>AsyncCall</code>对象，加入到<code>Dispatcher</code>中的异步队列中。</p>
+<p><code>AsyncCall</code>继承自<code>RealCall</code>，它实现了<code>Runnable</code>接口，表示可以在后台线程中执行。在<code>AsyncCall</code>中，我们可以看到它会在后台线程中执行网络请求，并将结果通过<code>Callback</code>回调返回到主线程中。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">final</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">AsyncCall</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">RealCall</span>.<span class="hljs-title">AsyncCall</span> </span>&#123;<br>  <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-type">Callback</span>&lt;<span class="hljs-type">T</span>&gt; responseCallback;<br><br>  <span class="hljs-type">AsyncCall</span>(<span class="hljs-type">Callback</span>&lt;<span class="hljs-type">T</span>&gt; responseCallback) &#123;<br>    <span class="hljs-keyword">super</span>();<br>    <span class="hljs-keyword">this</span>.responseCallback = responseCallback;<br>  &#125;<br><br>  <span class="hljs-meta">@Override</span> <span class="hljs-keyword">protected</span> void execute() &#123;<br>    boolean signalledCallback = <span class="hljs-literal">false</span>;<br>    <span class="hljs-keyword">try</span> &#123;<br>      <span class="hljs-type">Response</span>&lt;<span class="hljs-type">T</span>&gt; response = getResponseWithInterceptorChain();<br>      <span class="hljs-keyword">if</span> (retryAndFollowUpInterceptor.isCanceled()) &#123;<br>        signalledCallback = <span class="hljs-literal">true</span>;<br>        responseCallback.onFailure(<span class="hljs-type">RealCall</span>.<span class="hljs-keyword">this</span>, <span class="hljs-keyword">new</span> <span class="hljs-type">IOException</span>(<span class="hljs-string">&quot;Canceled&quot;</span>));<br>      &#125; <span class="hljs-keyword">else</span> &#123;<br>        signalledCallback = <span class="hljs-literal">true</span>;<br>        responseCallback.onResponse(<span class="hljs-type">RealCall</span>.<span class="hljs-keyword">this</span>, response);<br>      &#125;<br>    &#125; <span class="hljs-keyword">catch</span> (<span class="hljs-type">IOException</span> e) &#123;<br>      <span class="hljs-keyword">if</span> (signalledCallback) &#123;<br>        <span class="hljs-comment">// Do not signal the callback twice!</span><br>        <span class="hljs-type">Platform</span>.get().log(<span class="hljs-type">INFO</span>, <span class="hljs-string">&quot;Callback failure for &quot;</span> + toLoggableString(), e);<br>      &#125; <span class="hljs-keyword">else</span> &#123;<br>        responseCallback.onFailure(<span class="hljs-type">RealCall</span>.<span class="hljs-keyword">this</span>, e);<br>      &#125;<br>    &#125; <span class="hljs-keyword">finally</span> &#123;<br>      client.dispatcher().finished(<span class="hljs-keyword">this</span>);<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-meta">@Override</span> public <span class="hljs-type">String</span> toString() &#123;<br>    <span class="hljs-keyword">return</span> <span class="hljs-type">RealCall</span>.<span class="hljs-keyword">this</span>.toString();<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在<code>AsyncCall</code>中，首先会调用<code>getResponseWithInterceptorChain()</code>方法来获取响应结果。如果请求被取消，则会调用<code>onFailure()</code>方法将结果返回到主线程中。否则，会调用<code>onResponse()</code>方法将结果返回到主线程中。无论请求成功或失败，都会调用<code>finished()</code>方法将该请求从异步队列中移除。</p>
+<h4 id="cancel-方法"><a href="#cancel-方法" class="headerlink" title="cancel 方法"></a>cancel 方法</h4><p><code>cancel</code>方法用于取消正在执行的请求。如果请求已经完成或已经取消，则该方法不会有任何效果。</p>
+<h4 id="isExecuted-方法"><a href="#isExecuted-方法" class="headerlink" title="isExecuted 方法"></a>isExecuted 方法</h4><p><code>isExecuted</code>方法用于判断请求是否已经执行。如果已经执行，则返回true，否则返回false。</p>
+<h4 id="isCanceled-方法"><a href="#isCanceled-方法" class="headerlink" title="isCanceled 方法"></a>isCanceled 方法</h4><p><code>isCanceled</code>方法用于判断请求是否已经取消。如果已经取消，则返回true，否则返回false。</p>
+<h4 id="clone-方法"><a href="#clone-方法" class="headerlink" title="clone 方法"></a>clone 方法</h4><p><code>clone</code>方法用于创建一个当前 Call 对象的副本。这个方法一般用于发起多次相同的请求。</p>
+<p>以上这些方法就构成了 Retrofit 的 Call 逻辑。在使用 Retrofit 时，我们一般会通过<code>execute</code>或<code>enqueue</code>方法发起 HTTP 请求，并通过传入的<code>Callback</code>对象来处理响应结果。</p>
+<h3 id="二、扩展机制"><a href="#二、扩展机制" class="headerlink" title="二、扩展机制"></a>二、扩展机制</h3><p>Retrofit 是一个非常灵活的网络请求库，它提供了很多扩展机制，让我们可以根据自己的需要来定制请求和响应处理逻辑。下面介绍一些常用的扩展机制。</p>
+<h4 id="Converter"><a href="#Converter" class="headerlink" title="Converter"></a>Converter</h4><p>Converter 用于将 HTTP 请求和响应的数据类型转换成 Java 对象。Retrofit 默认提供了两种 Converter：<code>GsonConverter</code>和<code>JacksonConverter</code>，它们分别使用<code>Gson</code>和<code>Jackson</code>库将数据类型转换成<code>Java</code>对象。如果我们需要使用其他类型的转换库，也可以自定义 Converter 来实现。</p>
+<p>下面是一个自定义 Converter 的示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MyConverter</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Converter</span>&lt;ResponseBody, MyObject&gt; &#123;<br><br>    <span class="hljs-keyword">private</span> Gson gson;<br><br>    <span class="hljs-keyword">public</span> <span class="hljs-title function_">MyConverter</span><span class="hljs-params">(Gson gson)</span> &#123;<br>        <span class="hljs-built_in">this</span>.gson = gson;<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> MyObject <span class="hljs-title function_">convert</span><span class="hljs-params">(ResponseBody value)</span> <span class="hljs-keyword">throws</span> IOException &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-type">String</span> <span class="hljs-variable">json</span> <span class="hljs-operator">=</span> value.string();<br>            <span class="hljs-type">MyObject</span> <span class="hljs-variable">obj</span> <span class="hljs-operator">=</span> gson.fromJson(json, MyObject.class);<br>            <span class="hljs-keyword">return</span> obj;<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            value.close();<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在上面的示例中，我们定义了一个<code>MyConverter</code>类，它实现了<code>Converter</code>接口，用于将<code>ResponseBody</code>类型的响应数据转换成<code>MyObject</code>类型的<code>Java</code>对象。在<code>convert</code>方法中，我们使用自己定义的转换逻辑来实现数据类型的转换。</p>
+<h4 id="Interceptor"><a href="#Interceptor" class="headerlink" title="Interceptor"></a>Interceptor</h4><p>Interceptor 用于对 HTTP 请求进行拦截和处理。在 Retrofit 中，我们可以通过 Interceptor 来对请求添加头信息、对响应进行缓存、打印请求日志等操作。Retrofit 提供了两种 Interceptor：<code>OkHttpInterceptor</code>和<code>RetrofitInterceptor</code>，它们分别用于拦截 OkHttp 的请求和 Retrofit 的请求。我们也可以自定义 Interceptor 来实现自己的拦截逻辑。</p>
+<p>下面是一个自定义 Interceptor 的示例：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MyInterceptor</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Interceptor</span> &#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> Response <span class="hljs-title function_">intercept</span><span class="hljs-params">(Chain chain)</span> <span class="hljs-keyword">throws</span> IOException &#123;<br>        <span class="hljs-comment">// 在这里可以对请求进行拦截和处理</span><br>        <span class="hljs-type">Request</span> <span class="hljs-variable">request</span> <span class="hljs-operator">=</span> chain.request();<br>        <span class="hljs-type">Response</span> <span class="hljs-variable">response</span> <span class="hljs-operator">=</span> chain.proceed(request);<br>        <span class="hljs-comment">// 在这里可以对响应进行处理</span><br>        <span class="hljs-keyword">return</span> response;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在上面的示例中，我们定义了一个<code>MyInterceptor</code>类，它实现了<code>Interceptor</code>接口，用于对请求和响应进行拦截和处理。在<code>intercept</code>方法中，我们可以对请求进行处理，然后使用<code>chain.proceed(request)</code>方法将请求传递给下一个拦截器或处理器，最终获得响应结果并进行处理。</p>
+<h4 id="CallAdapter"><a href="#CallAdapter" class="headerlink" title="CallAdapter"></a>CallAdapter</h4><p>CallAdapter 用于将 Call 对象转换成另一种类型的对象。在 Retrofit 中，我们可以通过 CallAdapter 将 Call 对象转换成 RxJava 的 Observable 对象，也可以将 Call 对象转换成 LiveData 对象。Retrofit 提供了两种CallAdapter：<code>RxJavaCallAdapter</code>和<code>LiveDataCallAdapter</code>，它们分别用于将 Call 对象转换成 RxJava 的 Observable 对象和 LiveData 对象。我们也可以自定义 CallAdapter 来实现自己的转换逻辑。</p>
+<p>下面是一个自定义 CallAdapter 的示例：</p>
+<figure class="highlight haxe"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs haxe"><span class="hljs-keyword">public</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MyCallAdapter</span>&lt;<span class="hljs-title">T</span>&gt; <span class="hljs-keyword"><span class="hljs-keyword">implements</span> <span class="hljs-type">CallAdapter</span></span>&lt;<span class="hljs-title">T</span>, <span class="hljs-title">MyResult</span>&lt;<span class="hljs-title">T</span>&gt;&gt; </span>&#123;<br>    @Override<br>    <span class="hljs-keyword">public</span> Type responseType() &#123;<br>        <span class="hljs-comment">// 返回响应数据的类型</span><br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-type">ParameterizedTypeImpl</span>(MyResult.class, <span class="hljs-keyword">new</span> <span class="hljs-type">Type</span>[]&#123;T.class&#125;);<br>    &#125;<br><br>    @Override<br>    <span class="hljs-keyword">public</span> MyResult&lt;T&gt; adapt(Call&lt;T&gt; call) &#123;<br>        <span class="hljs-comment">// 在这里可以对Call对象进行处理，并返回自定义的结果对象</span><br>        <span class="hljs-keyword">try</span> &#123;<br>            Response&lt;T&gt; response = call.execute();<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-type">MyResult</span>&lt;&gt;(response.body(), response.code(), response.message());<br>        &#125; <span class="hljs-keyword">catch</span> (IOException e) &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-type">MyResult</span>&lt;&gt;(e);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在上面的示例中，我们定义了一个<code>MyCallAdapter</code>类，它实现了<code>CallAdapter</code>接口，用于将<code>Call</code>对象转换成<code>MyResult</code>对象。在<code>responseType</code>方法中，我们返回了响应数据的类型，它是一个<code>ParameterizedTypeImpl</code>类型的对象，用于表示<code>MyResult&lt;T&gt;</code>类型。在<code>adapt</code>方法中，我们对<code>Call</code>对象进行处理，并返回自定义的<code>MyResult</code>对象，它包含了响应数据、状态码和错误信息。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p><strong>在本文中，我们深入分析了 Retrofit 的核心源码，特别是 Call 逻辑的实现细节，以及 Retrofit 的三个扩展机制：Converter、Interceptor 和 CallAdapter。</strong></p>
+<p><strong>通过本文的学习，我们可以更加深入地理解 Retrofit 的工作原理，并可以根据需求自定义扩展 Retrofit 的功能。同时，本文提供了三个扩展机制的示例代码，可以帮助读者更加深入地了解 Retrofit 的扩展机制的使用。</strong></p>
+
+              
+            </div>
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Android-%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">#Android 源码分析</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Retrofit 核心源码分析（三）- Call 逻辑分析和扩展机制</div>
+      <div>https://smallmarker.github.io/2023/03/10/Retrofit 核心源码分析（三）-Call-逻辑分析和扩展机制/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>smallmarker</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年3月10日</div>
+        </div>
+      
+      
+      <div class="license-meta-item">
+        <div>许可协议</div>
+        <div>
+          
+            
+            
+              <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+              <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                <i class="iconfont icon-by"></i>
+              </span>
+              </a>
+            
+          
+        </div>
+      </div>
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/03/08/Retrofit%20%E6%A0%B8%E5%BF%83%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%EF%BC%88%E4%BA%8C%EF%BC%89-%E7%BD%91%E7%BB%9C%E8%AF%B7%E6%B1%82%E5%92%8C%E5%93%8D%E5%BA%94%E5%A4%84%E7%90%86/" title="Retrofit 核心源码分析（二）- 网络请求和响应处理">
+                        <span class="hidden-mobile">Retrofit 核心源码分析（二）- 网络请求和响应处理</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      headingSelector : CONFIG.toc.headingSelector || 'h1,h2,h3,h4,h5,h6',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      collapseDepth   : CONFIG.toc.collapseDepth || 0,
+      scrollSmooth    : true,
+      headingsOffset  : -boardTop
+    });
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+  });
+</script>
+
+
+  <script>
+  (function() {
+    var enableLang = CONFIG.code_language.enable && CONFIG.code_language.default;
+    var enableCopy = CONFIG.copy_btn;
+    if (!enableLang && !enableCopy) {
+      return;
+    }
+
+    function getBgClass(ele) {
+      return Fluid.utils.getBackgroundLightness(ele) >= 0 ? 'code-widget-light' : 'code-widget-dark';
+    }
+
+    var copyTmpl = '';
+    copyTmpl += '<div class="code-widget">';
+    copyTmpl += 'LANG';
+    copyTmpl += '</div>';
+    jQuery('.markdown-body pre').each(function() {
+      var $pre = jQuery(this);
+      if ($pre.find('code.mermaid').length > 0) {
+        return;
+      }
+      if ($pre.find('span.line').length > 0) {
+        return;
+      }
+
+      var lang = '';
+
+      if (enableLang) {
+        lang = CONFIG.code_language.default;
+        if ($pre[0].children.length > 0 && $pre[0].children[0].classList.length >= 2 && $pre.children().hasClass('hljs')) {
+          lang = $pre[0].children[0].classList[1];
+        } else if ($pre[0].getAttribute('data-language')) {
+          lang = $pre[0].getAttribute('data-language');
+        } else if ($pre.parent().hasClass('sourceCode') && $pre[0].children.length > 0 && $pre[0].children[0].classList.length >= 2) {
+          lang = $pre[0].children[0].classList[1];
+          $pre.parent().addClass('code-wrapper');
+        } else if ($pre.parent().hasClass('markdown-body') && $pre[0].classList.length === 0) {
+          $pre.wrap('<div class="code-wrapper"></div>');
+        }
+        lang = lang.toUpperCase().replace('NONE', CONFIG.code_language.default);
+      }
+      $pre.append(copyTmpl.replace('LANG', lang).replace('code-widget">',
+        getBgClass($pre[0]) + (enableCopy ? ' code-widget copy-btn" data-clipboard-snippet><i class="iconfont icon-copy"></i>' : ' code-widget">')));
+
+      if (enableCopy) {
+        Fluid.utils.createScript('https://lib.baomitu.com/clipboard.js/2.0.10/clipboard.min.js', function() {
+          var clipboard = new window.ClipboardJS('.copy-btn', {
+            target: function(trigger) {
+              var nodes = trigger.parentNode.childNodes;
+              for (var i = 0; i < nodes.length; i++) {
+                if (nodes[i].tagName === 'CODE') {
+                  return nodes[i];
+                }
+              }
+            }
+          });
+          clipboard.on('success', function(e) {
+            e.clearSelection();
+            e.trigger.innerHTML = e.trigger.innerHTML.replace('icon-copy', 'icon-success');
+            setTimeout(function() {
+              e.trigger.innerHTML = e.trigger.innerHTML.replace('icon-success', 'icon-copy');
+            }, 2000);
+          });
+        });
+      }
+    });
+  })();
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
